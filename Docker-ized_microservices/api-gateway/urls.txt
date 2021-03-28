@@ -1,0 +1,52 @@
+Until now we have:
+
+1. Currency Exchange microservice
+http://localhost:8000/currency-exchange/from/USD/to/INR
+
+2. Currency Conversion microservice
+http://localhost:8100/currency-conversion/from/USD/to/INR/quantity/10
+http://localhost:8100/currency-conversion-feign/from/USD/to/INR/quantity/10
+
+3. Eureka
+http://localhost:8761
+
+And now,
+4. API GATEWAY
+http://localhost:8765
+
+_____________________________________________________________________
+Api Gateway should talk to Any Microservice (registered with Eureka):
+_____________________________________________________________________
+We want the Api Gateway to talk to Eureka with that name (CURRENCY-EXCHANGE), find the microservice-server LOCATION,
+	and then execute requests to that url (currency-exchange/from/USD/to/INR)
+([From Eureka,] we pick up the NAME of the wanted microservice (CURRENCY-EXCHANGE), 
+	and picking up the PATH to that microservice (/currency-exchange/from/USD/to/INR) ).
+
+Via the Api Gateway:
+	http://localhost:8765/CURRENCY-EXCHANGE/currency-exchange/from/USD/to/INR -> Whitelabel Error Page 404
+Solution:
+We Enable DISCOVERY LOCATOR that in application.properties file:
+	spring.cloud.gateway.discovery.locator.enabled=true
+	
+	
+So now all my microservices URLS will be like:
+http://localhost:8765/CURRENCY-EXCHANGE/currency-exchange/from/USD/to/INR
+http://localhost:8765/CURRENCY-CONVERSION/currency-conversion/from/USD/to/INR/quantity/10
+http://localhost:8765/CURRENCY-CONVERSION/currency-conversion-feign/from/USD/to/INR/quantity/10
+With LOWERCASE enabled: 
+(spring.cloud.gateway.discovery.locator.lowerCaseServiceId=true)
+http://localhost:8765/currency-exchange/currency-exchange/from/USD/to/INR
+http://localhost:8765/currency-conversion/currency-conversion/from/USD/to/INR/quantity/10
+http://localhost:8765/currency-conversion/currency-conversion-feign/from/USD/to/INR/quantity/10
+
+Best practice however is to create CUSTOM ROUTES. (custom configuration class: ApiGatewayConfiguration)
+http://localhost:8765/currency-exchange/from/USD/to/INR
+http://localhost:8765/currency-conversion/from/USD/to/INR/quantity/10
+http://localhost:8765/currency-conversion-feign/from/USD/to/INR/quantity/10
+and also create new urls there, like:
+http://localhost:8765/currency-conversion-new/from/USD/to/INR/quantity/10
+
+
+
+
+	

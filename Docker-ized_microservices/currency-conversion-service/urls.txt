@@ -1,0 +1,12 @@
+What we want to do here in Currency-Convertion microservice is:
+to INVOKE Currency-Exchange microservice and do the calculation.
+Why? To DISTRIBUTE LOAD (Load Balancing) between Currency Exchange iNsTaNcEs. 
+
+Rest API form: 
+localhost:8100/currency-conversion/from/USD/to/INR/quantity/10
+(via proxy:
+localhost:8100/currency-conversion-feign/from/USD/to/INR/quantity/10
+)
+
+Currency Exchange Service
+http://localhost:8000/currency-exchange/from/USD/to/INR

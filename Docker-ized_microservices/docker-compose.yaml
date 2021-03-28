@@ -1,0 +1,99 @@
+#use spaces, Not Tabs
+version: '3.7'
+
+services:
+
+  currency-exchange:
+    image: apostol1s/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    #I will give 700MB of memory for this specific container
+    mem_limit: 700m
+    ports: 
+      - "8000:8000"
+    networks: 
+      - currency-network
+    #currency-exchange depends on naming-server (we can specify it here)
+    depends_on:
+      - naming-server
+      - rabbitmq
+    #localhost:xxxx at application properties doesnt work (eg at eureka server)
+    #1. So I make an ENVIRONMENT variable for this and call "naming-server" in that place
+    #2. Also configure Zipkin url
+    #3. Configure the microservices to send the data to Zipkin over Rabbit MQ
+    environment: 
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+      RABBIT.URI: amqp://guest:guest@rabbitmq:5672
+      SPRING.RABBITMQ.HOST: rabbitmq
+      SPRING.ZIPKIN.SENDER.TYPE: rabbit
+
+  currency-conversion:
+    image: apostol1s/mmv2-currency-conversion-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports: 
+      - "8100:8100"
+    networks: 
+      - currency-network
+    depends_on:
+      - naming-server
+      - rabbitmq
+    #ENVIRONMENT variable for eureka server
+    environment: 
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+      RABBIT.URI: amqp://guest:guest@rabbitmq:5672
+      SPRING.RABBITMQ.HOST: rabbitmq
+      SPRING.ZIPKIN.SENDER.TYPE: rabbit
+  
+  api-gateway:
+    image: apostol1s/mmv2-api-gateway:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports: 
+      - "8765:8765"
+    networks: 
+      - currency-network
+    depends_on:
+      - naming-server
+      - rabbitmq
+    #ENVIRONMENT variable for eureka server
+    environment: 
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+      RABBIT.URI: amqp://guest:guest@rabbitmq:5672
+      SPRING.RABBITMQ.HOST: rabbitmq
+      SPRING.ZIPKIN.SENDER.TYPE: rabbit
+  
+  #docker run -p 9411:9411 openzipkin/zipkin:2.23
+  zipkin-server:
+    image: openzipkin/zipkin:2.23
+    mem_limit: 300m
+    ports: 
+      - "9411:9411"
+    networks: 
+      - currency-network
+    environment:
+      RABBIT.URI: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      - rabbitmq
+  
+  rabbitmq:
+    #versions may need update later on, keep that in mind
+    image: rabbitmq:3.8.14-management
+    mem_limit: 300m
+    ports: 
+      - "5672:5672"
+      - "15672:15672"
+    networks: 
+      - currency-network
+
+  naming-server:
+    image: apostol1s/mmv2-naming-server:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports: 
+      - "8761:8761"
+    networks: 
+      - currency-network
+
+      
+#One of the best practices is to create my own network
+networks: 
+  currency-network:
